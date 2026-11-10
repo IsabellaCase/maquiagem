@@ -109,6 +109,31 @@
         color: #e8cbbb;
       }
 
+      .navbar-actions .navbar-cart-button {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        color: #e8cbbb;
+      }
+
+      .navbar-cart-count {
+        position: absolute;
+        top: -0.55rem;
+        right: -0.7rem;
+        min-width: 1.15rem;
+        padding: 0.1rem 0.25rem;
+        border-radius: 1rem;
+        background: #e8cbbb;
+        color: #171412;
+        font-size: 0.68rem;
+        font-weight: 700;
+        line-height: 1;
+        text-align: center;
+      }
+
       .navbar-luxury .navbar-toggler {
         border-color: rgba(232, 203, 187, 0.5);
       }
@@ -354,6 +379,48 @@
         font-size: 0.82rem;
       }
 
+      .makeup-cart-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 1rem 0;
+        border-bottom: 1px solid #eee4de;
+      }
+
+      .makeup-cart-item-name {
+        color: #382a27;
+        font-weight: 600;
+      }
+
+      .makeup-quantity-control {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.75rem;
+      }
+
+      .makeup-quantity-control button {
+        width: 2rem;
+        height: 2rem;
+        border: 1px solid #d9c8bd;
+        border-radius: 50%;
+        background: #fff;
+        color: #382a27;
+      }
+
+      .makeup-remove-item {
+        padding: 0;
+        border: 0;
+        background: transparent;
+        color: #805c50;
+        text-decoration: underline;
+      }
+
+      .makeup-checkout-note {
+        color: #766761;
+        font-size: 0.9rem;
+      }
+
       .makeup-modal-art {
         display: flex;
         min-height: 300px;
@@ -480,11 +547,11 @@
                 <svg class="feather feather-search" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
                   <circle cx="11" cy="11" r="8"></circle>
                   <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                </svg></a><a href="#!" aria-label="Sacola de compras">
+                </svg></a><button class="navbar-cart-button" type="button" id="makeupCartButton" aria-label="Abrir sacola de compras">
                 <svg class="feather feather-shopping-bag" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M6 8h12l1 13H5L6 8z"></path>
                   <path d="M9 8V6a3 3 0 0 1 6 0v2"></path>
-                </svg></a></div>
+                  </svg><span class="navbar-cart-count" id="makeupCartCount" aria-live="polite">0</span></button></div>
           </div>
         </div>
       </nav>
@@ -593,7 +660,76 @@
               <h2 class="makeup-category-heading mb-2" id="makeupProductTitle"></h2>
               <p class="text-800 mb-3" id="makeupModalDescription"></p>
               <p class="makeup-product-price mb-0" id="makeupModalPrice"></p>
+              <button class="btn btn-dark w-100 mt-4" type="button" id="makeupAddToCart">Adicionar à sacola</button>
             </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal fade" id="makeupCartModal" tabindex="-1" aria-labelledby="makeupCartTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+          <div class="modal-content border-0">
+            <div class="modal-header">
+              <h2 class="modal-title makeup-category-heading" id="makeupCartTitle">Sua sacola</h2>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body">
+              <p class="makeup-demo-note">Valores de referência. A loja confirmará disponibilidade, frete e valor final pelo WhatsApp.</p>
+              <div id="makeupCartItems" aria-live="polite"></div>
+              <p class="text-muted mb-0" id="makeupCartEmpty">Sua sacola está vazia.</p>
+              <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
+                <strong>Subtotal estimado</strong>
+                <strong id="makeupCartTotal">R$ 0,00</strong>
+              </div>
+              <p class="text-danger small mt-2 mb-0" id="makeupCartStatus" role="alert" hidden></p>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-outline-dark" data-bs-dismiss="modal">Continuar comprando</button>
+              <button type="button" class="btn btn-dark" id="makeupCheckoutButton" disabled>Finalizar pelo WhatsApp</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal fade" id="makeupCheckoutModal" tabindex="-1" aria-labelledby="makeupCheckoutTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content border-0">
+            <form id="makeupCheckoutForm">
+              <div class="modal-header">
+                <h2 class="modal-title makeup-category-heading" id="makeupCheckoutTitle">Dados do pedido</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+              </div>
+              <div class="modal-body">
+                <p class="makeup-checkout-note">Preencha seus dados. O WhatsApp abrirá com o pedido pronto para você enviar. A loja confirmará frete, disponibilidade, valor e forma de pagamento.</p>
+                <div class="mb-3">
+                  <label class="form-label" for="makeupCustomerName">Seu nome</label>
+                  <input class="form-control" id="makeupCustomerName" name="name" autocomplete="name" required>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label" for="makeupCustomerPhone">Seu telefone</label>
+                  <input class="form-control" id="makeupCustomerPhone" name="phone" type="tel" autocomplete="tel" required>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label" for="makeupDeliveryAddress">Endereço para entrega (ou escreva “retirada”)</label>
+                  <textarea class="form-control" id="makeupDeliveryAddress" name="address" rows="2" autocomplete="street-address" required></textarea>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label" for="makeupPaymentPreference">Preferência de pagamento</label>
+                  <select class="form-select" id="makeupPaymentPreference" name="payment" required>
+                    <option value="" selected disabled>Selecione uma opção</option>
+                    <option>Pix (confirmar chave com a loja)</option>
+                    <option>Cartão (consultar disponibilidade)</option>
+                    <option>Combinar pelo WhatsApp</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="form-label" for="makeupOrderNotes">Observações (opcional)</label>
+                  <textarea class="form-control" id="makeupOrderNotes" name="notes" rows="2"></textarea>
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-outline-dark" id="makeupBackToCart">Voltar à sacola</button>
+                <button type="submit" class="btn btn-dark">Abrir WhatsApp</button>
+              </div>
+            </form>
           </div>
         </div>
       </div>
@@ -3686,7 +3822,7 @@
       <!-- <section> close ============================-->
       <!-- ============================================-->
 
-      <footer class="makeup-footer">Casé Beauty · Beleza do seu jeito</footer>
+      <footer class="makeup-footer">Casé Beauty · Beleza do seu jeitoOO</footer>
 
     </main>
     <!-- ===============================================-->
@@ -3795,7 +3931,162 @@
           preview.setAttribute('aria-hidden', 'true');
         });
 
-        var productModal = new window.bootstrap.Modal(document.getElementById('makeupProductModal'));
+        var productModalElement = document.getElementById('makeupProductModal');
+        var cartModalElement = document.getElementById('makeupCartModal');
+        var checkoutModalElement = document.getElementById('makeupCheckoutModal');
+        var productModal = new window.bootstrap.Modal(productModalElement);
+        var cartModal = new window.bootstrap.Modal(cartModalElement);
+        var checkoutModal = new window.bootstrap.Modal(checkoutModalElement);
+        var cartItemsElement = document.getElementById('makeupCartItems');
+        var cartEmptyElement = document.getElementById('makeupCartEmpty');
+        var cartTotalElement = document.getElementById('makeupCartTotal');
+        var cartCountElement = document.getElementById('makeupCartCount');
+        var cartStatusElement = document.getElementById('makeupCartStatus');
+        var checkoutButton = document.getElementById('makeupCheckoutButton');
+        var cart = {};
+        var activeProduct = null;
+        var cartStorageKey = 'case-beauty-cart-v1';
+        var whatsappNumber = '5511982437826';
+
+        var setCartStatus = function (message) {
+          cartStatusElement.textContent = message;
+          cartStatusElement.hidden = !message;
+        };
+
+        try {
+          var savedCart = JSON.parse(window.localStorage.getItem(cartStorageKey) || '{}');
+          if (savedCart && typeof savedCart === 'object' && !Array.isArray(savedCart)) {
+            Object.keys(savedCart).forEach(function (productId) {
+              var quantity = savedCart[productId];
+              var productExists = products.some(function (product) { return product.id === productId; });
+              if (productExists && Number.isInteger(quantity) && quantity > 0 && quantity <= 99) {
+                cart[productId] = quantity;
+              }
+            });
+          }
+        } catch (error) {
+          setCartStatus('Não foi possível recuperar a sacola salva neste navegador.');
+        }
+
+        var cartEntries = function () {
+          return Object.keys(cart).map(function (productId) {
+            return {
+              product: products.find(function (product) { return product.id === productId; }),
+              quantity: cart[productId]
+            };
+          }).filter(function (entry) { return Boolean(entry.product); });
+        };
+
+        var cartTotalInCents = function () {
+          return cartEntries().reduce(function (total, entry) {
+            return total + Math.round(entry.product.price * 100) * entry.quantity;
+          }, 0);
+        };
+
+        var saveCart = function () {
+          try {
+            window.localStorage.setItem(cartStorageKey, JSON.stringify(cart));
+            setCartStatus('');
+          } catch (error) {
+            setCartStatus('A sacola funciona nesta página, mas não pôde ser salva neste navegador.');
+          }
+        };
+
+        var renderCart = function () {
+          var entries = cartEntries();
+          var itemCount = entries.reduce(function (total, entry) { return total + entry.quantity; }, 0);
+          cartCountElement.textContent = itemCount;
+          document.getElementById('makeupCartButton').setAttribute('aria-label', 'Abrir sacola de compras, ' + itemCount + ' itens');
+          cartEmptyElement.hidden = entries.length > 0;
+          checkoutButton.disabled = entries.length === 0;
+          cartTotalElement.textContent = currency.format(cartTotalInCents() / 100);
+          cartItemsElement.innerHTML = entries.map(function (entry) {
+            var product = entry.product;
+            var lineTotal = Math.round(product.price * 100) * entry.quantity;
+            return '<div class="makeup-cart-item"><div><div class="makeup-cart-item-name">' + escapeHTML(product.name) + '</div><div class="text-muted small">' + currency.format(lineTotal / 100) + '</div></div><div class="text-end"><div class="makeup-quantity-control"><button type="button" data-cart-action="decrease" data-product-id="' + escapeHTML(product.id) + '" aria-label="Diminuir quantidade de ' + escapeHTML(product.name) + '">−</button><span>' + entry.quantity + '</span><button type="button" data-cart-action="increase" data-product-id="' + escapeHTML(product.id) + '" aria-label="Aumentar quantidade de ' + escapeHTML(product.name) + '">+</button></div><div><button class="makeup-remove-item small mt-2" type="button" data-cart-action="remove" data-product-id="' + escapeHTML(product.id) + '">Remover</button></div></div></div>';
+          }).join('');
+        };
+
+        renderCart();
+
+        document.getElementById('makeupCartButton').addEventListener('click', function () {
+          renderCart();
+          cartModal.show();
+        });
+
+        cartItemsElement.addEventListener('click', function (event) {
+          var actionButton = event.target.closest('[data-cart-action]');
+          if (!actionButton) return;
+
+          var productId = actionButton.getAttribute('data-product-id');
+          var action = actionButton.getAttribute('data-cart-action');
+          if (action === 'remove' || (action === 'decrease' && cart[productId] <= 1)) {
+            delete cart[productId];
+          } else if (action === 'increase' && cart[productId] < 99) {
+            cart[productId] += 1;
+          } else if (action === 'decrease') {
+            cart[productId] -= 1;
+          }
+
+          saveCart();
+          renderCart();
+        });
+
+        checkoutButton.addEventListener('click', function () {
+          if (!cartEntries().length) return;
+
+          cartModalElement.addEventListener('hidden.bs.modal', function () {
+            checkoutModal.show();
+          }, { once: true });
+          cartModal.hide();
+        });
+
+        document.getElementById('makeupBackToCart').addEventListener('click', function () {
+          checkoutModalElement.addEventListener('hidden.bs.modal', function () {
+            renderCart();
+            cartModal.show();
+          }, { once: true });
+          checkoutModal.hide();
+        });
+
+        document.getElementById('makeupCheckoutForm').addEventListener('submit', function (event) {
+          event.preventDefault();
+          if (!event.currentTarget.reportValidity()) return;
+
+          var formData = new window.FormData(event.currentTarget);
+          var items = cartEntries();
+          if (!items.length) {
+            checkoutModal.hide();
+            return;
+          }
+
+          var orderLines = items.map(function (entry) {
+            var lineTotal = Math.round(entry.product.price * 100) * entry.quantity;
+            return '- ' + entry.quantity + 'x ' + entry.product.name + ' — ' + currency.format(lineTotal / 100);
+          });
+          var message = [
+            'Olá! Gostaria de fazer este pedido na Casé Beauty:',
+            '',
+            orderLines.join('\n'),
+            '',
+            'Subtotal estimado: ' + currency.format(cartTotalInCents() / 100),
+            'Nome: ' + formData.get('name'),
+            'Telefone: ' + formData.get('phone'),
+            'Entrega/retirada: ' + formData.get('address'),
+            'Preferência de pagamento: ' + formData.get('payment'),
+            formData.get('notes') ? 'Observações: ' + formData.get('notes') : '',
+            '',
+            'Sei que os preços são de referência. Por favor, confirme disponibilidade, frete, valor final e pagamento.'
+          ].filter(Boolean).join('\n');
+
+          var whatsappUrl = 'https://wa.me/' + whatsappNumber + '?text=' + encodeURIComponent(message);
+          var whatsappWindow = window.open(whatsappUrl, '_blank');
+          if (whatsappWindow) {
+            whatsappWindow.opener = null;
+          } else {
+            window.location.assign(whatsappUrl);
+          }
+        });
 
         var showCategory = function (categoryId, addHistory) {
           var category = categories.find(function (item) { return item.id === categoryId; });
@@ -3803,7 +4094,7 @@
 
           var scrollPosition = window.scrollY;
           var categoryProducts = products.filter(function (product) { return product.category === category.id; });
-          categoryHeading.innerHTML = '<div class="mb-4"><p class="makeup-section-eyebrow mb-2">' + escapeHTML(category.description) + '</p><h2 class="makeup-category-heading">' + escapeHTML(category.title) + '</h2><p class="makeup-demo-note mt-2">Produtos e preços de exemplo — atualize antes de publicar sua loja.</p></div><div class="row g-3">' + categoryProducts.map(function (product) { return productCard(product, category); }).join('') + '</div>';
+          categoryHeading.innerHTML = '<div class="mb-4"><p class="makeup-section-eyebrow mb-2">' + escapeHTML(category.description) + '</p><h2 class="makeup-category-heading">' + escapeHTML(category.title) + '</h2><p class="makeup-demo-note mt-2">Os preços exibidos são de referência. Estoque, frete e valor final serão confirmados pelo WhatsApp.</p></div><div class="row g-3">' + categoryProducts.map(function (product) { return productCard(product, category); }).join('') + '</div>';
           categoryList.hidden = true;
           categoryIntro.hidden = true;
           categoryView.hidden = false;
@@ -3859,7 +4150,10 @@
           if (!productButton) return;
 
           var product = products.find(function (item) { return item.id === productButton.getAttribute('data-product-id'); });
+          if (!product) return;
           var category = categories.find(function (item) { return item.id === product.category; });
+          if (!category) return;
+          activeProduct = product;
           document.getElementById('makeupModalArt').innerHTML = productVisual(product, 'makeup-modal-image');
           document.getElementById('makeupModalArt').style.setProperty('--product-background', product.background);
           document.getElementById('makeupModalCategory').textContent = category.title;
@@ -3868,6 +4162,18 @@
           document.getElementById('makeupModalPrice').textContent = currency.format(product.price);
 
           productModal.show();
+        });
+
+        document.getElementById('makeupAddToCart').addEventListener('click', function () {
+          if (!activeProduct) return;
+
+          cart[activeProduct.id] = Math.min((cart[activeProduct.id] || 0) + 1, 99);
+          saveCart();
+          renderCart();
+          productModalElement.addEventListener('hidden.bs.modal', function () {
+            cartModal.show();
+          }, { once: true });
+          productModal.hide();
         });
       }());
     </script>
