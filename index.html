@@ -698,7 +698,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
               </div>
               <div class="modal-body">
-                <p class="makeup-checkout-note">Preencha seus dados. O WhatsApp abrirá com o pedido pronto para você enviar. A loja confirmará frete, disponibilidade, valor e forma de pagamento.</p>
+                <p class="makeup-checkout-note">O WhatsApp abrirá com o pedido pronto para você enviar. Se salvar seus dados neste aparelho, seu nome, telefone e endereço serão preenchidos nas próximas compras. A loja confirmará frete, disponibilidade, valor e forma de pagamento.</p>
                 <div class="mb-3">
                   <label class="form-label" for="makeupCustomerName">Seu nome</label>
                   <input class="form-control" id="makeupCustomerName" name="name" autocomplete="name" required>
@@ -708,8 +708,16 @@
                   <input class="form-control" id="makeupCustomerPhone" name="phone" type="tel" autocomplete="tel" required>
                 </div>
                 <div class="mb-3">
-                  <label class="form-label" for="makeupDeliveryAddress">Endereço para entrega (ou escreva “retirada”)</label>
-                  <textarea class="form-control" id="makeupDeliveryAddress" name="address" rows="2" autocomplete="street-address" required></textarea>
+                  <label class="form-label" for="makeupFulfillment">Como quer receber?</label>
+                  <select class="form-select" id="makeupFulfillment" name="fulfillment" required>
+                    <option value="" selected disabled>Selecione uma opção</option>
+                    <option value="delivery">Entrega</option>
+                    <option value="pickup">Retirada na loja</option>
+                  </select>
+                </div>
+                <div class="mb-3" id="makeupDeliveryAddressGroup" hidden>
+                  <label class="form-label" for="makeupDeliveryAddress">Endereço para entrega</label>
+                  <textarea class="form-control" id="makeupDeliveryAddress" name="address" rows="2" autocomplete="street-address"></textarea>
                 </div>
                 <div class="mb-3">
                   <label class="form-label" for="makeupPaymentPreference">Preferência de pagamento</label>
@@ -724,6 +732,11 @@
                   <label class="form-label" for="makeupOrderNotes">Observações (opcional)</label>
                   <textarea class="form-control" id="makeupOrderNotes" name="notes" rows="2"></textarea>
                 </div>
+                <div class="form-check">
+                  <input class="form-check-input" id="makeupRememberCustomer" type="checkbox" checked>
+                  <label class="form-check-label" for="makeupRememberCustomer">Lembrar meus dados somente neste aparelho</label>
+                </div>
+                <p class="text-muted small mt-2 mb-0" id="makeupCustomerProfileStatus" role="status" aria-live="polite" hidden></p>
               </div>
               <div class="modal-footer">
                 <button type="button" class="btn btn-outline-dark" id="makeupBackToCart">Voltar à sacola</button>
@@ -3946,12 +3959,47 @@
         var cart = {};
         var activeProduct = null;
         var cartStorageKey = 'case-beauty-cart-v1';
+        var customerProfileStorageKey = 'case-beauty-customer-v1';
         var whatsappNumber = '5511982437826';
+        var checkoutForm = document.getElementById('makeupCheckoutForm');
+        var fulfillmentSelect = document.getElementById('makeupFulfillment');
+        var deliveryAddressGroup = document.getElementById('makeupDeliveryAddressGroup');
+        var deliveryAddressInput = document.getElementById('makeupDeliveryAddress');
+        var rememberCustomerInput = document.getElementById('makeupRememberCustomer');
+        var customerProfileStatus = document.getElementById('makeupCustomerProfileStatus');
 
         var setCartStatus = function (message) {
           cartStatusElement.textContent = message;
           cartStatusElement.hidden = !message;
         };
+
+        var setCustomerProfileStatus = function (message) {
+          customerProfileStatus.textContent = message;
+          customerProfileStatus.hidden = !message;
+        };
+
+        var updateDeliveryAddress = function () {
+          var isDelivery = fulfillmentSelect.value === 'delivery';
+          deliveryAddressGroup.hidden = !isDelivery;
+          deliveryAddressInput.required = isDelivery;
+        };
+
+        fulfillmentSelect.addEventListener('change', updateDeliveryAddress);
+
+        try {
+          var savedCustomer = JSON.parse(window.localStorage.getItem(customerProfileStorageKey) || 'null');
+          if (savedCustomer && typeof savedCustomer === 'object' && !Array.isArray(savedCustomer)) {
+            document.getElementById('makeupCustomerName').value = typeof savedCustomer.name === 'string' ? savedCustomer.name : '';
+            document.getElementById('makeupCustomerPhone').value = typeof savedCustomer.phone === 'string' ? savedCustomer.phone : '';
+            fulfillmentSelect.value = savedCustomer.fulfillment === 'delivery' || savedCustomer.fulfillment === 'pickup' ? savedCustomer.fulfillment : '';
+            deliveryAddressInput.value = typeof savedCustomer.address === 'string' ? savedCustomer.address : '';
+            document.getElementById('makeupPaymentPreference').value = typeof savedCustomer.payment === 'string' ? savedCustomer.payment : '';
+            rememberCustomerInput.checked = true;
+            updateDeliveryAddress();
+          }
+        } catch (error) {
+          setCustomerProfileStatus('Não foi possível recuperar os dados salvos neste aparelho. Você ainda pode preencher e enviar seu pedido.');
+        }
 
         try {
           var savedCart = JSON.parse(window.localStorage.getItem(cartStorageKey) || '{}');
@@ -4049,7 +4097,7 @@
           checkoutModal.hide();
         });
 
-        document.getElementById('makeupCheckoutForm').addEventListener('submit', function (event) {
+        checkoutForm.addEventListener('submit', function (event) {
           event.preventDefault();
           if (!event.currentTarget.reportValidity()) return;
 
@@ -4064,6 +4112,8 @@
             var lineTotal = Math.round(entry.product.price * 100) * entry.quantity;
             return '- ' + entry.quantity + 'x ' + entry.product.name + ' — ' + currency.format(lineTotal / 100);
           });
+          var fulfillment = formData.get('fulfillment') === 'pickup' ? 'Retirada na loja' : 'Entrega';
+          var address = formData.get('address');
           var message = [
             'Olá! Gostaria de fazer este pedido na Casé Beauty:',
             '',
@@ -4072,12 +4122,31 @@
             'Subtotal estimado: ' + currency.format(cartTotalInCents() / 100),
             'Nome: ' + formData.get('name'),
             'Telefone: ' + formData.get('phone'),
-            'Entrega/retirada: ' + formData.get('address'),
+            'Forma de recebimento: ' + fulfillment,
+            formData.get('fulfillment') === 'delivery' ? 'Endereço: ' + address : '',
             'Preferência de pagamento: ' + formData.get('payment'),
             formData.get('notes') ? 'Observações: ' + formData.get('notes') : '',
             '',
             'Sei que os preços são de referência. Por favor, confirme disponibilidade, frete, valor final e pagamento.'
           ].filter(Boolean).join('\n');
+
+          try {
+            if (rememberCustomerInput.checked) {
+              window.localStorage.setItem(customerProfileStorageKey, JSON.stringify({
+                name: formData.get('name'),
+                phone: formData.get('phone'),
+                fulfillment: formData.get('fulfillment'),
+                address: address,
+                payment: formData.get('payment')
+              }));
+              setCustomerProfileStatus('Seus dados foram salvos somente neste aparelho.');
+            } else {
+              window.localStorage.removeItem(customerProfileStorageKey);
+              setCustomerProfileStatus('Seus dados não serão lembrados neste aparelho.');
+            }
+          } catch (error) {
+            setCustomerProfileStatus('Não foi possível salvar seus dados neste aparelho. O pedido ainda pode ser enviado pelo WhatsApp.');
+          }
 
           var whatsappUrl = 'https://wa.me/' + whatsappNumber + '?text=' + encodeURIComponent(message);
           var whatsappWindow = window.open(whatsappUrl, '_blank');
